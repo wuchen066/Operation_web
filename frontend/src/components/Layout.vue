@@ -31,23 +31,20 @@
         <nav class="py-4">
           <div class="px-4 mb-4">
             <div class="bg-primary/10 rounded-lg p-4">
-              <div class="text-primary font-medium mb-2">服务器状态</div>
+              <div class="text-primary font-medium mb-2">不知道写什么</div>
               <div class="flex items-center justify-between">
-                <div class="flex flex-col">
+                <!-- <div class="flex flex-col">
                   <span class="text-xs text-gray-500">IP地址：</span>
                   <span class="text-lg font-semibold">{{ ipAddress }}</span>
                 </div>
                 <div class="flex flex-col">
                   <span class="text-xs text-gray-500">内存使用率</span>
                   <span class="text-lg font-semibold">{{ memUsage }}%</span>
-                </div>
+                </div> -->
               </div>
             </div>
           </div>
 
-          <div class="px-4 py-3 bg-gray-100">
-            <div class="text-xs font-medium text-gray-400 uppercase">主导航</div>
-          </div>
           <div class="space-y-1 px-2">
             <router-link to="/" :class="['flex items-center px-4 py-3 rounded-lg transition-colors', $route.path === '/' ? 'text-primary bg-primary/10' : 'text-gray-600 hover:bg-gray-100']">
               <i class="fa fa-tachometer w-5 text-center mr-3"></i>
