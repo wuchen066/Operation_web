@@ -1,4 +1,5 @@
-import { createApp } from 'vue'
+import { createApp } from 'vue';
+import 'font-awesome/css/font-awesome.min.css';
 import { createPinia } from 'pinia'
 import './style.css'
 import { createRouter, createWebHistory } from 'vue-router'

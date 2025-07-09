@@ -26,18 +26,29 @@ def get_settings():
             'logDirectory': '/var/log/server-monitor',
             'enableCompression': True,
             'enableCache': False,
-            'autoReconnect': True
+            'autoReconnect': True,
+            'showCpuUsage': True,
+            'showMemoryUsage': True,
+            'showDiskUsage': True,
+            'showNetworkUsage': True,
+            'showProcessList': True
         })
         
     return jsonify({
         'display_name': settings['display_name'],
+        'refresh_rate': settings['refresh_rate'],
         'serverIp': settings['server_host'],
         'serverPort': settings['server_port'],
         'timeout': settings['connection_timeout'],
         'logDirectory': settings['log_directory'],
         'enableCompression': settings['enable_compression'] == 1,
         'enableCache': settings['enable_cache'] == 1,
-        'autoReconnect': settings['auto_reconnect'] == 1
+        'autoReconnect': settings['auto_reconnect'] == 1,
+        'showCpuUsage': settings['show_cpu_usage'] == 1,
+        'showMemoryUsage': settings['show_memory_usage'] == 1,
+        'showDiskUsage': settings['show_disk_usage'] == 1,
+        'showNetworkUsage': settings['show_network_usage'] == 1,
+        'showProcessList': settings['show_process_list'] == 1
     })
 
 @app.route('/api/settings', methods=['POST'])
@@ -52,13 +63,19 @@ def save_settings():
         # 定义前端参数到数据库字段的映射
         field_mapping = {
             'display_name': 'display_name',
+            'refresh_rate': 'refresh_rate',
             'serverIp': 'server_host',
             'serverPort': 'server_port',
             'timeout': 'connection_timeout',
             'logDirectory': 'log_directory',
             'enableCompression': 'enable_compression',
             'enableCache': 'enable_cache',
-            'autoReconnect': 'auto_reconnect'
+            'autoReconnect': 'auto_reconnect',
+            'showCpuUsage': 'show_cpu_usage',
+            'showMemoryUsage': 'show_memory_usage',
+            'showDiskUsage': 'show_disk_usage',
+            'showNetworkUsage': 'show_network_usage',
+            'showProcessList': 'show_process_list',
         }
         
         if existing:
@@ -89,36 +106,49 @@ def save_settings():
             # 创建新设置记录 - 使用默认值填充缺失字段
             default_values = {
                 'display_name': '服务器监控系统',
+                'refresh_rate': 1,
                 'serverIp': '127.0.0.1',
                 'serverPort': 8080,
                 'timeout': 10,
                 'logDirectory': '/var/log/server-monitor',
                 'enableCompression': True,
                 'enableCache': False,
-                'autoReconnect': True
+                'autoReconnect': True,
+                'showCpuUsage': True,
+                'showMemoryUsage': True,
+                'showDiskUsage': True,
+                'showNetworkUsage': True,
+                'showProcessList': True
+
             }
             
             # 合并默认值和请求数据
             insert_data = {** default_values, **data}
             conn.execute(
-                'INSERT INTO server_config (display_name, server_host, server_port, connection_timeout, log_directory, enable_compression, enable_cache, auto_reconnect) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO server_config (display_name, refresh_rate, server_host, server_port, connection_timeout, log_directory, enable_compression, enable_cache, auto_reconnect) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 (
                     insert_data['display_name'],
+                    insert_data['refresh_rate'],
                     insert_data['serverIp'],
                     insert_data['serverPort'],
                     insert_data['timeout'],
                     insert_data['logDirectory'],
                     1 if insert_data['enableCompression'] else 0,
                     1 if insert_data['enableCache'] else 0,
-                    1 if insert_data['autoReconnect'] else 0
+                    1 if insert_data['autoReconnect'] else 0,
+                    1 if insert_data['showCpuUsage'] else 0,
+                    1 if insert_data['showMemoryUsage'] else 0,
+                    1 if insert_data['showDiskUsage'] else 0,
+                    1 if insert_data['showNetworkUsage'] else 0,
+                    1 if insert_data['showProcessList'] else 0,
                 )
             )
         
         conn.commit()
         return jsonify({
             'status': 'success', 
-            'message': 'Settings saved successfully',
-            'updated_fields': {k: data[k] for k in data if k in field_mapping}
+            'message': '保存成功',
+            # 'updated_fields': {k: data[k] for k in data if k in field_mapping}
         })
     except sqlite3.Error as e:
         conn.rollback()

@@ -9,6 +9,7 @@ const activeTab = ref('basic');
 // 初始化设置数据对象，与API返回结构对应
 const settings = ref({
   display_name: '',
+  refresh_rate: 0,
   serverIp: '',
   serverPort: 0,
   timeout: 0,
@@ -27,13 +28,19 @@ onMounted(async () => {
     // 将API返回数据映射到表单字段
     settings.value = {
       display_name: data.display_name || '',
+      refresh_rate: data.refresh_rate || 0,
       serverIp: data.serverIp || '',
       serverPort: data.serverPort || 8080,
       timeout: data.timeout || 10,
       logDirectory: data.logDirectory || '',
       enableCompression: data.enableCompression || false,
       enableCache: data.enableCache || false,
-      autoReconnect: data.autoReconnect || false
+      autoReconnect: data.autoReconnect || false,
+      showCpuUsage: data.showCpuUsage || false,
+      showMemoryUsage: data.showMemoryUsage || false,
+      showDiskUsage: data.showDiskUsage || false,
+      showNetworkUsage: data.showNetworkUsage || false,
+      showProcessList: data.showProcessList || false, 
     };
   } catch (error) {
     ElMessage.error('获取设置数据失败，请刷新页面重试');
@@ -46,6 +53,15 @@ const saveSettings = async () => {
   try {
     const response = await axios.post('/api/settings', settings.value);
     ElMessage.success(response.data.message);
+    // 更新localStorage缓存
+    localStorage.setItem('settings', JSON.stringify({
+      data: response.data,
+      timestamp: Date.now()
+    }));
+    // 更新displayName状态
+    if (response.data.display_name) {
+      displayName.value = response.data.display_name;
+    }
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '保存设置失败');
   }
@@ -73,7 +89,7 @@ const saveSettings = async () => {
 
             <div class="setting-item">
               <label class="block text-gray-700 dark:text-black mb-2 font-medium">刷新频率 (秒)</label>
-              <ElInput v-model.number="settings.refreshRate" type="number" min="1" max="60" class="w-full" />
+              <ElInput v-model.number="settings.refresh_rate" type="number" min="1" max="60" class="w-full" />
             </div>
 
             <div class="setting-item">
@@ -118,7 +134,7 @@ const saveSettings = async () => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
               <div class="setting-item">
                 <label class="block text-gray-700 dark:text-black mb-2 font-medium">服务器IP</label>
-                <ElInput v-model="settings.serverHost" placeholder="请输入服务器IP地址" class="w-full" />
+                <ElInput v-model="settings.serverIp" placeholder="请输入服务器IP地址" class="w-full" />
               </div>
 
               <div class="setting-item">

@@ -107,7 +107,7 @@ import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 
-const displayName = ref('运维监控工具');
+const displayName = ref('服务器运维监控');
 const cpuUsage = ref('0');
 const memUsage = ref('0');
 const isSidebarOpen = ref(true);
@@ -164,14 +164,44 @@ onMounted(async () => {
     }
   });
 
-  // 获取displayName和设置
+  // 获取displayName和设置，添加缓存逻辑
   try {
-    const response = await axios.get('/api/settings');
-    displayName.value = response.data.display_name || 'Server Monitor';
-    // 可以在这里处理其他设置数据
+    // 检查localStorage缓存
+    const cachedSettings = localStorage.getItem('settings');
+    if (cachedSettings) {
+      const { data, timestamp } = JSON.parse(cachedSettings);
+      const now = Date.now();
+      // 缓存有效期10分钟
+      if (now - timestamp < 10 * 60 * 1000) {
+        displayName.value = data.display_name || '服务器运维监控';
+      } else {
+        // 缓存过期，重新请求
+        throw new Error('Cache expired');
+      }
+    } else {
+      // 无缓存，请求API
+      const response = await axios.get('/api/settings');
+      displayName.value = response.data.display_name || '服务器运维监控';
+      // 存入缓存，带时间戳
+      localStorage.setItem('settings', JSON.stringify({
+        data: response.data,
+        timestamp: Date.now()
+      }));
+    }
   } catch (error) {
-    console.error('Failed to fetch settings:', error);
-    displayName.value = 'Server Monitor';
+    console.error('Failed to fetch settings from cache:', error);
+    // 尝试直接请求API，不依赖缓存
+    try {
+      const response = await axios.get('/api/settings');
+      displayName.value = response.data.display_name || '服务器运维监控';
+      localStorage.setItem('settings', JSON.stringify({
+        data: response.data,
+        timestamp: Date.now()
+      }));
+    } catch (fetchError) {
+      console.error('Failed to fetch settings after cache error:', fetchError);
+      displayName.value = '服务器运维监控';
+    }
   }
 
   // 初始化数据
