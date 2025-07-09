@@ -1,49 +1,55 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
-import { ElMessage, ElTabs, ElTabPane, ElInput, ElSlider, ElSwitch, ElSelect, ElOption } from 'element-plus';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
+import { ElMessage } from 'element-plus';
 
-// 状态数据 - 设置默认显示基本设置
+// 初始化标签页状态和设置数据对象
 const activeTab = ref('basic');
 
-// 设置数据 - 移除主题相关配置
-const settings = reactive({
-  // 基本设置
-  displayName: '服务器监控系统',
-  refreshRate: '5',
-  showCpuUsage: true,
-  showMemoryUsage: true,
-  showDiskUsage: true,
-  showNetworkUsage: true,
-  showProcessList: true,
-  enableAlerts: true,
-  alertOnHighCpu: true,
-  alertOnHighMemory: true,
-  alertOnHighDisk: true,
-
-  // 服务器配置
-  serverHost: 'localhost',
-  serverPort: '15600',
-  connectionTimeout: 30,
-  maxConnections: 10,
-logDirectory: '',
-enableCompression: true,
-  enableCache: true,
-  autoReconnect: true
+// 初始化设置数据对象，与API返回结构对应
+const settings = ref({
+  display_name: '',
+  serverIp: '',
+  serverPort: 0,
+  timeout: 0,
+  logDirectory: '',
+  enableCompression: false,
+  enableCache: false,
+  autoReconnect: false
 });
 
-// 保存设置
-function saveSettings() {
-  ElMessage.success('设置已保存');
-  // 保存后刷新页面
-  setTimeout(() => {
-    window.location.reload();
-  }, 1000);
-}
-
-// 组件挂载时初始化
-onMounted(() => {
-  // 初始化设置（不再从localStorage加载）
+// 加载时获取设置数据并填充表单
+onMounted(async () => {
+  try {
+    const response = await axios.get('/api/settings');
+    const data = response.data;
+    
+    // 将API返回数据映射到表单字段
+    settings.value = {
+      display_name: data.display_name || '',
+      serverIp: data.serverIp || '',
+      serverPort: data.serverPort || 8080,
+      timeout: data.timeout || 10,
+      logDirectory: data.logDirectory || '',
+      enableCompression: data.enableCompression || false,
+      enableCache: data.enableCache || false,
+      autoReconnect: data.autoReconnect || false
+    };
+  } catch (error) {
+    ElMessage.error('获取设置数据失败，请刷新页面重试');
+    console.error('Failed to fetch settings:', error);
+  }
 });
+
+// 保存设置的方法
+const saveSettings = async () => {
+  try {
+    const response = await axios.post('/api/settings', settings.value);
+    ElMessage.success(response.data.message);
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '保存设置失败');
+  }
+};
 </script>
 
 <template>
@@ -62,7 +68,7 @@ onMounted(() => {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
             <div class="setting-item">
               <label class="block text-gray-700 dark:text-black mb-2 font-medium">面板别名</label>
-              <ElInput v-model="settings.displayName" placeholder="给面板取个别的名称，用于网页标题" class="w-full" />
+              <ElInput v-model="settings.display_name" placeholder="给面板取个别的名称，用于网页标题" class="w-full" />
             </div>
 
             <div class="setting-item">

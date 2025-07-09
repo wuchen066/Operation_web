@@ -105,12 +105,14 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import axios from 'axios';
 
-const displayName = ref('服务器管理系统');
+const displayName = ref('运维监控工具');
 const cpuUsage = ref('0');
 const memUsage = ref('0');
 const isSidebarOpen = ref(true);
 const route = useRoute();
+const theme = ref('light');
 
 // 移动端自动关闭侧边栏
 watch(route, () => {
@@ -126,35 +128,20 @@ function toggleSidebar() {
 
 // 模拟系统数据加载
 function simulateSystemDataLoading() {
-  // // 模拟 CPU 数据
-  // const cpu = Math.floor(Math.random() * 30) + 10;
-  // cpuUsage.value = cpu;
-
-  // // 模拟内存数据
-  // const mem = Math.floor(Math.random() * 40) + 30;
-  // memUsage.value = mem;
+  // 模拟 CPU 和内存数据逻辑保持不变
 }
 
 // 主题切换
-
-const theme = ref('light');
-
 function toggleTheme() {
-  // 切换主题模式
   theme.value = theme.value === 'light' ? 'dark' : 'light';
-  
-  // 更新DOM类名
-  if (theme.value === 'dark') { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); }
-  
-  // 保存到本地存储
+  document.documentElement.classList.toggle('dark', theme.value === 'dark');
   localStorage.setItem('theme', theme.value);
 }
 
-// 初始化主题
-onMounted(() => {
+onMounted(async () => {
+  // 初始化主题
   const savedTheme = localStorage.getItem('theme');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  
   if (savedTheme) {
     theme.value = savedTheme;
     document.documentElement.classList.toggle('dark', savedTheme === 'dark');
@@ -162,14 +149,12 @@ onMounted(() => {
     theme.value = 'dark';
     document.documentElement.classList.add('dark');
   }
-})
 
-onMounted(() => {
   // 初始化侧边栏状态
   if (window.innerWidth < 768) {
     isSidebarOpen.value = false;
   }
-  
+
   // 监听窗口大小变化
   window.addEventListener('resize', () => {
     if (window.innerWidth >= 768) {
@@ -178,7 +163,17 @@ onMounted(() => {
       isSidebarOpen.value = false;
     }
   });
-  
+
+  // 获取displayName和设置
+  try {
+    const response = await axios.get('/api/settings');
+    displayName.value = response.data.display_name || 'Server Monitor';
+    // 可以在这里处理其他设置数据
+  } catch (error) {
+    console.error('Failed to fetch settings:', error);
+    displayName.value = 'Server Monitor';
+  }
+
   // 初始化数据
   simulateSystemDataLoading();
   // 定时更新数据
