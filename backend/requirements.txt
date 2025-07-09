@@ -3,3 +3,4 @@ Flask-CORS==4.0.0
 Flask-WTF==1.2.1
 Flask-Limiter==3.3.0
 python-dotenv==1.0.0
+scrypt==1.4.1

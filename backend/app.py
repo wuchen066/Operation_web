@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, session
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -7,10 +7,64 @@ import sqlite3
 import os
 import argparse
 import logging
+from werkzeug.security import generate_password_hash, check_password_hash
+import random
+import string
+
+# 导入数据库创建函数
+from sql import create_database
+from flask_wtf.csrf import generate_csrf
 
 app = Flask(__name__)
+
+# 确保密钥已设置
+app.secret_key = os.environ.get('SECRET_KEY', 'dev_key_for_testing_only')
+
+# 数据库连接函数
+def get_db_connection():
+    conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'default.db'))
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# 初始化数据库表结构
+with app.app_context():
+    create_database()
+
+# 初始化默认用户
+def init_default_user():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # 检查是否已有用户
+    cursor.execute("SELECT COUNT(*) FROM users")
+    if cursor.fetchone()[0] == 0:
+        # 生成复杂随机用户名和密码
+        username = 'admin_' + ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        password = ''.join(random.choices(
+            string.ascii_uppercase + string.ascii_lowercase + 
+            string.digits + '!@#$%^&*()_+-=[]{}|;:,.<>?', 
+            k=16
+        ))
+        
+        # 加密密码
+        password_hash = generate_password_hash(password, method='pbkdf2:sha256')
+        
+        # 存储到数据库
+        cursor.execute(
+            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+            (username, password_hash)
+        )
+        conn.commit()
+        print(f"首次运行：已创建默认管理员用户\n用户名: {username}\n密码: {password}\n请妥善保存此凭证！")
+    
+    conn.close()
+
+# 在应用上下文中初始化默认用户
+with app.app_context():
+    init_default_user()
+
 # 限制仅允许前端开发服务器访问API
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173", "supports_credentials": True}})
 
 # 初始化CSRF保护
 csrf = CSRFProtect(app)
@@ -34,10 +88,69 @@ logging.basicConfig(
 def log_request():
     app.logger.info(f"{request.method} {request.path} - {get_remote_address()}")
 
-def get_db_connection():
-    conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'default.db'))
-    conn.row_factory = sqlite3.Row
-    return conn
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    # 添加调试日志
+    app.logger.info(f"登录尝试 - 用户名: {username}, 密码长度: {len(password) if password else 0}")
+    
+    if not username or not password:
+        app.logger.warning("用户名或密码为空")
+        return jsonify({'status': 'error', 'message': '用户名和密码不能为空'}), 400
+    
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    
+    if user:
+        app.logger.info(f"找到用户: {user['username']}, 密码哈希: {user['password_hash'][:20]}...")
+        password_match = check_password_hash(user['password_hash'], password)
+        app.logger.info(f"密码验证结果: {password_match}")
+    else:
+        app.logger.warning(f"未找到用户: {username}")
+    
+    conn.close()
+    
+    if user and check_password_hash(user['password_hash'], password):
+        session['user_id'] = user['id']
+        app.logger.info(f"用户 {username} 登录成功")
+        return jsonify({'status': 'success', 'message': '登录成功'})
+    
+    app.logger.warning(f"用户 {username} 登录失败")
+    return jsonify({'status': 'error', 'message': '用户名或密码错误'}), 401
+
+@app.route('/api/login', methods=['GET'])
+@limiter.limit("300 per hour")
+def check_login():
+    # 生成CSRF令牌
+    csrf_token = generate_csrf()
+    
+    # 检查登录状态并获取用户名
+    logged_in = 'user_id' in session
+    username = ''
+    
+    if logged_in:
+        conn = get_db_connection()
+        user = conn.execute('SELECT username FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+        conn.close()
+        if user:
+            username = user['username']
+    
+    # 构建响应
+    response = jsonify({
+        'status': 'success',
+        'logged_in': logged_in,
+        'username': username
+    })
+    response.set_cookie('csrf_token', csrf_token, path='/')
+    return response
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    session.pop('user_id', None)
+    return jsonify({'status': 'success', 'message': '登出成功'})
 
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
@@ -216,4 +329,4 @@ if __name__ == '__main__':
     app.run(host='127.0.0.1', port=args.port, debug=debug_mode)
     
     # 生产环境禁用调试模式
-    app.run(debug=debug_mode, port=args.port, host='127.0.0.1')
+    # app.run(debug=debug_mode, port=args.port, host='127.0.0.1')

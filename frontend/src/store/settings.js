@@ -5,7 +5,7 @@ export const useSettingsStore = defineStore('settings', {
     serverIp: '127.0.0.1',
     serverPort: 8080,
     timeout: 10,
-    logDirectory: '/var/log/server-monitor',
+    logDirectory: '/var/log/operation-logs',
     enableCompression: true,
     enableCache: false,
     autoReconnect: true

@@ -3,11 +3,22 @@ import os
 
 def create_database():
     # 连接数据库（如果不存在则创建）
-    conn = sqlite3.connect('default.db')
+    db_path = os.path.join(os.path.dirname(__file__), 'default.db')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
     try:
-        # 安全地创建配置表 - 使用固定SQL字符串
+        # 安全地创建用户表
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        ''')
+
+        # 安全地创建服务器配置表
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS server_config (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,7 +89,7 @@ def create_database():
 
         # 提交更改
         conn.commit()
-        print("数据库创建成功！配置表已安全初始化。")
+        print(f"数据库创建成功！配置表已安全初始化。数据库路径: {db_path}")
         
     except sqlite3.Error as e:
         print(f"数据库操作出错: {e}")
@@ -87,51 +98,51 @@ def create_database():
         # 确保连接关闭
         conn.close()
 
-def safe_query_config():
-    """安全查询配置的示例函数"""
-    try:
-        conn = sqlite3.connect('default.db')
-        cursor = conn.cursor()
+# def safe_query_config():
+#     """安全查询配置的示例函数"""
+#     try:
+#         conn = sqlite3.connect('default.db')
+#         cursor = conn.cursor()
         
-        # 使用参数化查询
-        cursor.execute("SELECT * FROM server_config WHERE id = ?", (1,))
-        config = cursor.fetchone()
+#         # 使用参数化查询
+#         cursor.execute("SELECT * FROM server_config WHERE id = ?", (1,))
+#         config = cursor.fetchone()
         
-        if config:
-            print("\n安全查询结果:")
-            print(f"服务器名称: {config[1]}")
-            print(f"刷新频率: 每 {config[2]} 秒")
-            print(f"监控CPU: {'启用' if config[3] else '禁用'}")
-        else:
-            print("未找到配置")
+#         if config:
+#             print("\n安全查询结果:")
+#             print(f"服务器名称: {config[1]}")
+#             print(f"刷新频率: 每 {config[2]} 秒")
+#             print(f"监控CPU: {'启用' if config[3] else '禁用'}")
+#         else:
+#             print("未找到配置")
             
-    except sqlite3.Error as e:
-        print(f"查询出错: {e}")
-    finally:
-        conn.close()
+#     except sqlite3.Error as e:
+#         print(f"查询出错: {e}")
+#     finally:
+#         conn.close()
 
-def safe_update_config(param, value):
-    """安全更新配置的示例函数"""
-    try:
-        conn = sqlite3.connect('default.db')
-        cursor = conn.cursor()
+# def safe_update_config(param, value):
+#     """安全更新配置的示例函数"""
+#     try:
+#         conn = sqlite3.connect('default.db')
+#         cursor = conn.cursor()
     
             
-        # 参数化更新
-        cursor.execute(f"UPDATE server_config SET {param} = ? WHERE id = ?", (value, 1))
-        conn.commit()
-        print(f"已安全更新 {param} 为 {value}")
+#         # 参数化更新
+#         cursor.execute(f"UPDATE server_config SET {param} = ? WHERE id = ?", (value, 1))
+#         conn.commit()
+#         print(f"已安全更新 {param} 为 {value}")
         
-    except sqlite3.Error as e:
-        print(f"更新出错: {e}")
-        conn.rollback()
-    finally:
-        conn.close()
+#     except sqlite3.Error as e:
+#         print(f"更新出错: {e}")
+#         conn.rollback()
+#     finally:
+#         conn.close()
 
 if __name__ == "__main__":
     # 创建并初始化数据库
     create_database()
     
     
-    # 演示安全更新
-    safe_update_config('display_name', '服务器')  # 合法更新
+    # # 演示安全更新
+    # safe_update_config('display_name', '服务器')  # 合法更新

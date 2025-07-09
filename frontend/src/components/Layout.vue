@@ -4,7 +4,7 @@
     <header class="bg-white dark:bg-black shadow-md z-10 sticky top-0">
       <div class="container mx-auto px-4 py-3 flex justify-between items-center">
         <div class="flex items-center space-x-2">
-          <button @click="toggleSidebar" class="md:hidden p-2 rounded-md hover:bg-gray-100">
+          <button @click="toggleSidebar" class="md:hidden p-2 rounded-md hover:bg-gray-100" v-if="isLoggedIn">
             <i class="fa fa-bars"></i>
           </button>
           <i class="fa fa-server text-primary text-2xl"></i>
@@ -14,11 +14,11 @@
         <div class="flex items-center space-x-4">
           <div class="relative">
             <button @click="toggleTheme" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-  <i class="fa" :class="theme === 'light' ? 'fa-sun-o text-yellow-500' : 'fa-moon-o text-blue-300'"></i>
+              <i class="fa" :class="theme === 'light' ? 'fa-sun-o text-yellow-500' : 'fa-moon-o text-blue-300'"></i>
             </button>
           </div>
-          <span class="text-gray-700 dark:text-white font-medium flex items-center">
-            <i class="fa fa-user-circle mr-2"></i>admin
+          <span class="text-gray-700 dark:text-white font-medium flex items-center cursor-pointer" v-if="isLoggedIn" @click="logout" title="点击登出">
+            <i class="fa fa-user-circle mr-2"></i>{{ username }}
           </span>
         </div>
       </div>
@@ -27,20 +27,13 @@
     <!-- 主内容区 -->
     <main class="flex-1 flex overflow-hidden">
       <!-- 侧边栏导航 -->
-      <aside :class="['bg-white dark:bg-black shadow-md h-full flex-shrink-0 overflow-y-auto transition-all duration-300', isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-0 md:translate-x-0 md:w-64']" id="sidebar">
+      <aside v-if="isLoggedIn" :class="['bg-white dark:bg-black shadow-md h-full flex-shrink-0 overflow-y-auto transition-all duration-300', isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-0 md:translate-x-0 md:w-64']" id="sidebar">
         <nav class="py-4">
           <div class="px-4 mb-4">
             <div class="bg-primary/10 dark:bg-black rounded-lg p-4">
               <div class="text-primary dark:text-white font-medium mb-2">不知道写什么</div>
               <div class="flex items-center justify-between">
-                <!-- <div class="flex flex-col">
-                  <span class="text-xs text-gray-500">IP地址：</span>
-                  <span class="text-lg font-semibold">{{ ipAddress }}</span>
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-xs text-gray-500">内存使用率</span>
-                  <span class="text-lg font-semibold">{{ memUsage }}%</span>
-                </div> -->
+                <!-- 服务器信息已注释 -->
               </div>
             </div>
           </div>
@@ -65,23 +58,6 @@
           </div>
 
           <!-- 服务器列表已注释 -->
-          <!-- <div class="mt-8 px-4">
-            <div class="text-xs font-medium text-gray-400 uppercase mb-2">服务器</div>
-            <div class="space-y-1">
-              <a href="#" class="flex items-center px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                <span>localhost</span>
-              </a>
-              <a href="#" class="flex items-center px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                <span>web-server-01</span>
-              </a>
-              <a href="#" class="flex items-center px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                <span class="inline-block w-2 h-2 rounded-full bg-gray-300 mr-2"></span>
-                <span>db-server-01</span>
-              </a>
-            </div>
-          </div> -->
         </nav>
       </aside>
 
@@ -103,8 +79,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted, watch, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
 const displayName = ref('服务器运维监控');
@@ -112,10 +88,47 @@ const cpuUsage = ref('0');
 const memUsage = ref('0');
 const isSidebarOpen = ref(true);
 const route = useRoute();
+const router = useRouter();
 const theme = ref('light');
+const isLoggedIn = ref(false);
+const username = ref('');
+
+// 检查登录状态
+const checkLoginStatus = async () => {
+  try {
+    // 检查localStorage缓存
+    const cachedStatus = localStorage.getItem('loginStatus');
+    if (cachedStatus) {
+      const cachedData = JSON.parse(cachedStatus);
+      const { loggedIn, username: cachedUsername, timestamp } = cachedData;
+      const now = Date.now();
+      // 检查缓存是否有效且包含用户名
+      if (now - timestamp < 30 * 60 * 1000 && cachedUsername) {
+        isLoggedIn.value = loggedIn;
+        username.value = cachedUsername;
+        return;
+      }
+    }
+    // 缓存不存在或已过期，调用API
+    const response = await axios.get('/api/login', { withCredentials: true });
+    isLoggedIn.value = response.data.logged_in;
+    username.value = response.data.username || '';
+    // 更新缓存
+    localStorage.setItem('loginStatus', JSON.stringify({
+      loggedIn: isLoggedIn.value,
+      username: username.value,
+      timestamp: Date.now()
+    }));
+  } catch (error) {
+    isLoggedIn.value = false;
+    username.value = '';
+    localStorage.removeItem('loginStatus');
+  }
+};
 
 // 移动端自动关闭侧边栏
-watch(route, () => {
+watch(route, async () => {
+  await checkLoginStatus();
   if (window.innerWidth < 768) {
     isSidebarOpen.value = false;
   }
@@ -138,7 +151,37 @@ function toggleTheme() {
   localStorage.setItem('theme', theme.value);
 }
 
+// 获取Cookie值
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// 用户登出
+const logout = async () => {
+  try {
+    const csrfToken = getCookie('csrf_token');
+    await axios.post('/api/logout', {}, {
+      headers: {
+        'X-CSRFToken': csrfToken
+      },
+      withCredentials: true
+    });
+    // 清除本地缓存
+    localStorage.removeItem('loginStatus');
+    isLoggedIn.value = false;
+    username.value = '';
+    // 重定向到登录页
+    router.push('/login');
+  } catch (error) {
+    console.error('登出失败:', error);
+    alert('登出失败，请重试');
+  }
+}
+
 onMounted(async () => {
+  await checkLoginStatus();
   // 初始化主题
   const savedTheme = localStorage.getItem('theme');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -154,15 +197,6 @@ onMounted(async () => {
   if (window.innerWidth < 768) {
     isSidebarOpen.value = false;
   }
-
-  // 监听窗口大小变化
-  window.addEventListener('resize', () => {
-    if (window.innerWidth >= 768) {
-      isSidebarOpen.value = true;
-    } else {
-      isSidebarOpen.value = false;
-    }
-  });
 
   // 获取displayName和设置，添加缓存逻辑
   try {
@@ -209,4 +243,6 @@ onMounted(async () => {
   // 定时更新数据
   setInterval(simulateSystemDataLoading, 5000);
 });
+
+
 </script>
