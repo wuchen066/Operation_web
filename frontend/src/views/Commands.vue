@@ -18,7 +18,7 @@
     <div class="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
       <h3 class="font-semibold text-gray-800 mb-3">常用命令</h3>
       <div class="flex flex-wrap gap-2 mb-3">
-        <button v-for="cmd in commonCommands" :key="cmd" @click="executeCommandDirectly(cmd)" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">{{ cmd }}</button>
+        <button v-for="cmd in commonCommands" :key="cmd" @click="executeCommandDirectly(cmd)" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors dark:text-black">{{ cmd }}</button>
       </div>
       <div class="flex gap-2">
         <input v-model="customCommand" type="text" class="flex-1 px-3 py-1 border rounded-md" placeholder="输入自定义命令">

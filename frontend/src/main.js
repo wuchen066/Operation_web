@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import './style.css'
 import { createRouter, createWebHistory } from 'vue-router'
 import ElementPlus from 'element-plus'
@@ -22,6 +23,8 @@ const router = createRouter({
 
 // 创建并挂载应用实例
 const app = createApp(App)
+const pinia = createPinia()
+app.use(pinia)
 app.use(router)
 app.use(ElementPlus)
 app.mount('#app')
