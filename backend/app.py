@@ -1,11 +1,38 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import sqlite3
 import os
 import argparse
+import logging
 
 app = Flask(__name__)
-CORS(app)  # 解决跨域问题
+# 限制仅允许前端开发服务器访问API
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
+
+# 初始化CSRF保护
+csrf = CSRFProtect(app)
+
+# 配置请求速率限制
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+# 配置日志
+logging.basicConfig(
+    filename='app.log',
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+def log_request():
+    app.logger.info(f"{request.method} {request.path} - {get_remote_address()}")
 
 def get_db_connection():
     conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'default.db'))
@@ -55,6 +82,18 @@ def get_settings():
 def save_settings():
     data = request.get_json()
     conn = get_db_connection()
+    
+    # 输入验证
+    validation_errors = []
+    if 'refresh_rate' in data and (not isinstance(data['refresh_rate'], int) or data['refresh_rate'] < 1 or data['refresh_rate'] > 300):
+        validation_errors.append('刷新频率必须是1-300之间的整数')
+    if 'serverPort' in data and (not isinstance(data['serverPort'], int) or data['serverPort'] < 1 or data['serverPort'] > 65535):
+        validation_errors.append('服务器端口必须是1-65535之间的整数')
+    if 'timeout' in data and (not isinstance(data['timeout'], int) or data['timeout'] < 1 or data['timeout'] > 300):
+        validation_errors.append('超时时间必须是1-300之间的整数')
+    
+    if validation_errors:
+        return jsonify({'status': 'error', 'message': '; '.join(validation_errors)}), 400
     
     try:
         # 检查是否已有设置记录
@@ -156,8 +195,25 @@ def save_settings():
     finally:
         conn.close()
 
+import os
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
+
 if __name__ == '__main__':
+    # 从环境变量获取配置
+    debug_mode = True  # 临时启用调试模式以捕获错误
+    secret_key = os.getenv('FLASK_SECRET_KEY', 'dev_secret_key_change_in_production')
+    
+    # 设置安全密钥
+    app.secret_key = secret_key
+    
     parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int, default=5000, help='Port to run the server on')
+    parser.add_argument('--port', type=int, default=5002, help='Port to run the server on')
     args = parser.parse_args()
-    app.run(debug=True, port=args.port)
+    print(f"Starting server with debug_mode={debug_mode}, port={args.port}")
+    app.run(host='127.0.0.1', port=args.port, debug=debug_mode)
+    
+    # 生产环境禁用调试模式
+    app.run(debug=debug_mode, port=args.port, host='127.0.0.1')

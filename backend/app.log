@@ -1,0 +1,29 @@
+2025-07-10 02:17:03 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-07-10 02:17:03 INFO: [33mPress CTRL+C to quit[0m
+2025-07-10 02:22:31 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-07-10 02:22:31 INFO: [33mPress CTRL+C to quit[0m
+2025-07-10 02:26:23 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5002
+2025-07-10 02:26:23 INFO: [33mPress CTRL+C to quit[0m
+2025-07-10 02:27:34 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5002
+2025-07-10 02:27:34 INFO: [33mPress CTRL+C to quit[0m
+2025-07-10 02:27:34 INFO:  * Restarting with stat
+2025-07-10 02:27:34 WARNING:  * Debugger is active!
+2025-07-10 02:27:34 INFO:  * Debugger PIN: 266-936-970
+2025-07-10 02:37:11 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5002
+2025-07-10 02:37:11 INFO: [33mPress CTRL+C to quit[0m
+2025-07-10 02:37:11 INFO:  * Restarting with stat
+2025-07-10 02:37:11 WARNING:  * Debugger is active!
+2025-07-10 02:37:11 INFO:  * Debugger PIN: 266-936-970
+2025-07-10 02:37:34 INFO: 127.0.0.1 - - [10/Jul/2025 02:37:34] "GET /api/settings HTTP/1.1" 200 -
+2025-07-10 02:37:34 INFO: 127.0.0.1 - - [10/Jul/2025 02:37:34] "GET /api/settings HTTP/1.1" 200 -
+2025-07-10 02:37:36 INFO: 127.0.0.1 - - [10/Jul/2025 02:37:36] "GET /api/settings HTTP/1.1" 200 -
+2025-07-10 02:37:43 INFO: 127.0.0.1 - - [10/Jul/2025 02:37:43] "GET /api/settings HTTP/1.1" 200 -
+2025-07-10 02:40:31 INFO:  * Detected change in '/Users/wuchen/Desktop/Operation_tools_web/vue-server-monitor/backend/app.py', reloading
+2025-07-10 02:40:31 INFO:  * Restarting with stat
+2025-07-10 02:40:31 WARNING:  * Debugger is active!
+2025-07-10 02:40:31 INFO:  * Debugger PIN: 266-936-970
