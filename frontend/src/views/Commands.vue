@@ -17,15 +17,12 @@
     <!-- 常用命令 -->
     <div class="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
       <h3 class="font-semibold text-gray-800 mb-3">常用命令</h3>
-      <div class="flex flex-wrap gap-2">
-        <button @click="selectCommand('ls -l')" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">ls -l</button>
-        <button @click="selectCommand('df -h')" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">df -h</button>
-        <button @click="selectCommand('top')" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">top</button>
-        <button @click="selectCommand('free -h')" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">free -h</button>
-        <button @click="selectCommand('ps aux')" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">ps aux</button>
-        <button @click="selectCommand('netstat -tuln')" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">netstat -tuln</button>
-        <button @click="selectCommand('ifconfig')" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">ifconfig</button>
-        <button @click="selectCommand('help')" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">help</button>
+      <div class="flex flex-wrap gap-2 mb-3">
+        <button v-for="cmd in commonCommands" :key="cmd" @click="executeCommandDirectly(cmd)" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">{{ cmd }}</button>
+      </div>
+      <div class="flex gap-2">
+        <input v-model="customCommand" type="text" class="flex-1 px-3 py-1 border rounded-md" placeholder="输入自定义命令">
+        <button @click="addCustomCommand" class="px-3 py-1 bg-primary text-white rounded-md hover:bg-primary/90">添加命令</button>
       </div>
     </div>
 
@@ -109,6 +106,22 @@ const commandHistory = ref([]);
 const isExecuting = ref(false);
 const prompt = ref('root@localhost:~# ');
 let historyId = 1;
+const commonCommands = ref(['ls -l', 'df -h', 'top', 'free -h', 'ps aux', 'netstat -tuln', 'ifconfig', 'help']);
+const customCommand = ref('');
+
+// 直接执行命令
+function executeCommandDirectly(command) {
+  commandInput.value = command;
+  executeCommand();
+}
+
+// 添加自定义命令
+function addCustomCommand() {
+  if (customCommand.value.trim() && !commonCommands.value.includes(customCommand.value.trim())) {
+    commonCommands.value.push(customCommand.value.trim());
+    customCommand.value = '';
+  }
+}
 
 // 选择常用命令
 function selectCommand(command) {
