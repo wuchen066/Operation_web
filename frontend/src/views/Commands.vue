@@ -96,6 +96,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
+import axios from 'axios';
 import { ElTable, ElTableColumn } from 'element-plus';
 import moment from 'moment';
 
@@ -133,7 +134,7 @@ function selectCommand(command) {
 }
 
 // 执行命令
-function executeCommand() {
+async function executeCommand() {
   if (!commandInput.value.trim() || isExecuting.value) return;
 
   const command = commandInput.value.trim();
@@ -151,31 +152,34 @@ function executeCommand() {
   // 滚动到底部
   scrollToBottom();
 
-  // 移除模拟执行延迟
-  setTimeout(() => {
-    let result = '';
-    let error = null;
-    let status = '成功';
-
-    // 移除命令模拟输出
-    result = '命令已执行，无模拟数据';
-
-    // 更新输出结果
+  try {
+    const response = await axios.post('/api/execute-command', { command });
+    const result = response.data.result;
     const index = terminalOutput.value.length - 1;
-    if (result) terminalOutput.value[index].result = result;
-    if (error) terminalOutput.value[index].error = error;
+    terminalOutput.value[index].result = result;
 
     // 添加到历史记录
     commandHistory.value.unshift({
       id: historyId++,
       command: command,
       time: moment().format('YYYY-MM-DD HH:mm:ss'),
-      status: status
+      status: '成功'
     });
+  } catch (error) {
+    const index = terminalOutput.value.length - 1;
+    terminalOutput.value[index].error = error.response?.data?.error || '命令执行失败';
 
+    // 添加到历史记录
+    commandHistory.value.unshift({
+      id: historyId++,
+      command: command,
+      time: moment().format('YYYY-MM-DD HH:mm:ss'),
+      status: '失败'
+    });
+  } finally {
     isExecuting.value = false;
     scrollToBottom();
-  }, 0); // 立即执行
+  }
 }
 
 // 重新执行历史命令

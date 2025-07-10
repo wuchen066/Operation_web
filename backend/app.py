@@ -28,7 +28,7 @@ def get_db_connection():
 
 # 初始化数据库表结构
 with app.app_context():
-    create_database()
+    create_database(app)
 
 # 初始化默认用户
 def init_default_user():
@@ -39,7 +39,8 @@ def init_default_user():
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
         # 生成复杂随机用户名和密码
-        username = 'admin_' + ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        username = random.choices(string.ascii_letters + string.digits, k=8)
+        # username = 'admin_' + ''.join(random.choices(string.ascii_letters + string.digits, k=8))
         password = ''.join(random.choices(
             string.ascii_uppercase + string.ascii_lowercase + 
             string.digits + '!@#$%^&*()_+-=[]{}|;:,.<>?', 
@@ -55,7 +56,8 @@ def init_default_user():
             (username, password_hash)
         )
         conn.commit()
-        print(f"首次运行：已创建默认管理员用户\n用户名: {username}\n密码: {password}\n请妥善保存此凭证！")
+        print(f"app: 首次运行：已创建默认管理员用户\n用户名: {username}\n密码: {password}\n请妥善保存此凭证！")
+        # app.logger.info(f"app: 首次运行：已创建默认管理员用户\n用户名: {username}\n密码: {password}\n请妥善保存此凭证！")
     
     conn.close()
 
@@ -64,7 +66,7 @@ with app.app_context():
     init_default_user()
 
 # 限制仅允许前端开发服务器访问API
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173", "supports_credentials": True}})
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:5174", "supports_credentials": True}})
 
 # 初始化CSRF保护
 csrf = CSRFProtect(app)
@@ -95,30 +97,30 @@ def login():
     password = data.get('password')
     
     # 添加调试日志
-    app.logger.info(f"登录尝试 - 用户名: {username}, 密码长度: {len(password) if password else 0}")
+    app.logger.info(f"login: 登录尝试 - 用户名: {username}, 密码长度: {len(password) if password else 0}")
     
     if not username or not password:
-        app.logger.warning("用户名或密码为空")
+        app.logger.warning("login: 用户名或密码为空")
         return jsonify({'status': 'error', 'message': '用户名和密码不能为空'}), 400
     
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
     
     if user:
-        app.logger.info(f"找到用户: {user['username']}, 密码哈希: {user['password_hash'][:20]}...")
+        app.logger.info(f"login: 找到用户: {user['username']}, 密码哈希: {user['password_hash'][:20]}...")
         password_match = check_password_hash(user['password_hash'], password)
-        app.logger.info(f"密码验证结果: {password_match}")
+        app.logger.info(f"login: 密码验证结果: {password_match}")
     else:
-        app.logger.warning(f"未找到用户: {username}")
+        app.logger.warning(f"login: 未找到用户: {username}")
     
     conn.close()
     
     if user and check_password_hash(user['password_hash'], password):
         session['user_id'] = user['id']
-        app.logger.info(f"用户 {username} 登录成功")
+        app.logger.info(f"login: 用户 {username} 登录成功")
         return jsonify({'status': 'success', 'message': '登录成功'})
     
-    app.logger.warning(f"用户 {username} 登录失败")
+    app.logger.warning(f"login: 用户 {username} 登录失败")
     return jsonify({'status': 'error', 'message': '用户名或密码错误'}), 401
 
 @app.route('/api/login', methods=['GET'])
@@ -150,6 +152,7 @@ def check_login():
 @app.route('/api/logout', methods=['POST'])
 def logout():
     session.pop('user_id', None)
+    app.logger.info("login: 用户登出成功")
     return jsonify({'status': 'success', 'message': '登出成功'})
 
 @app.route('/api/settings', methods=['GET'])
@@ -163,7 +166,7 @@ def get_settings():
             'serverIp': '127.0.0.1',
             'serverPort': 8080,
             'timeout': 10,
-            'logDirectory': '/var/log/server-monitor',
+            'logDirectory': '/var/log/operation_log',
             'enableCompression': True,
             'enableCache': False,
             'autoReconnect': True,
@@ -303,10 +306,11 @@ def save_settings():
             # 'updated_fields': {k: data[k] for k in data if k in field_mapping}
         })
     except sqlite3.Error as e:
-        conn.rollback()
-        return jsonify({'status': 'error', 'message': f'Database error: {str(e)}'}), 500
+            conn.rollback()
+            app.logger.error(f"sql: 保存设置失败: {e}")
+            return jsonify({'status': 'error', 'message': f'Database error: {str(e)}'}), 500
     finally:
-        conn.close()
+            conn.close()
 
 import os
 from dotenv import load_dotenv
@@ -323,10 +327,8 @@ if __name__ == '__main__':
     app.secret_key = secret_key
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--port', type=int, default=5002, help='Port to run the server on')
+    parser.add_argument('--port', type=int, default=5003, help='Port to run the server on')
     args = parser.parse_args()
     print(f"Starting server with debug_mode={debug_mode}, port={args.port}")
     app.run(host='127.0.0.1', port=args.port, debug=debug_mode)
     
-    # 生产环境禁用调试模式
-    # app.run(debug=debug_mode, port=args.port, host='127.0.0.1')

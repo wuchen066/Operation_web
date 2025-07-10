@@ -13,7 +13,7 @@ const settings = ref({
   serverIp: '',
   serverPort: 0,
   timeout: 0,
-  logDirectory: '',
+  logDirectory: '/var/log/operation_log',
   enableCompression: false,
   enableCache: false,
   autoReconnect: false
@@ -59,9 +59,8 @@ const saveSettings = async () => {
       timestamp: Date.now()
     }));
     // 更新displayName状态
-    if (response.data.display_name) {
-      displayName.value = response.data.display_name;
-    }
+    // 保存成功后1秒刷新页面
+    setTimeout(() => window.location.reload(), 1000);
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '保存设置失败');
   }

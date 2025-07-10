@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-def create_database():
+def create_database(app):
     # 连接数据库（如果不存在则创建）
     db_path = os.path.join(os.path.dirname(__file__), 'default.db')
     conn = sqlite3.connect(db_path)
@@ -61,7 +61,7 @@ def create_database():
             'server_port': 15600,
             'connection_timeout': 30,
             'max_connections': 10,
-            'log_directory': '',
+            'log_directory': '/var/log/operation_log',
             'enable_compression': 1,
             'enable_cache': 1,
             'auto_reconnect': 1
@@ -89,10 +89,10 @@ def create_database():
 
         # 提交更改
         conn.commit()
-        print(f"数据库创建成功！配置表已安全初始化。数据库路径: {db_path}")
+        app.logger.warning("sql: 数据库创建成功！配置表已安全初始化。数据库路径: %s", db_path)
         
     except sqlite3.Error as e:
-        print(f"数据库操作出错: {e}")
+        app.logger.error("sql: 数据库错误: %s", e)
         conn.rollback()
     finally:
         # 确保连接关闭

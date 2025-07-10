@@ -235,6 +235,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
+import axios from 'axios';
 import Chart from 'chart.js/auto';
 import { ElTable, ElTableColumn } from 'element-plus';
 
@@ -349,17 +350,40 @@ function updateCharts() {
   // 停止更新图表数据
 }
 
-// 模拟系统数据加载
-function simulateSystemDataLoading() {
-  cpuUsage.value = 0;
-  memUsage.value = 0;
-}
+// 获取系统监控数据
+const fetchSystemData = async () => {
+  try {
+    const response = await axios.get('/api/system-details');
+    const data = response.data;
+    // 基本系统信息
+    cpuModel.value = data.cpuModel;
+    cpuCores.value = data.cpuCores;
+    cpuFrequency.value = data.cpuFrequency;
+    cpuUsage.value = data.cpuUsage;
+    memTotal.value = data.memTotal;
+    memUsed.value = data.memUsed;
+    memFree.value = data.memFree;
+    memUsage.value = data.memUsage;
+    osName.value = data.osName;
+    hostname.value = data.hostname;
+    uptime.value = data.uptime;
+    currentUser.value = data.currentUser;
+    // 磁盘分区数据
+    diskPartitions.value = data.diskPartitions;
+    // 进程数据
+    processes.value = data.processes;
+    filteredProcesses.value = [...processes.value];
+    // 更新图表
+    updateCharts(data);
+  } catch (error) {
+    console.error('获取系统详细数据失败:', error);
+  }
+};
 
 // 刷新数据
-function refreshData() {
-  simulateSystemDataLoading();
-  updateCharts();
-}
+const refreshData = async () => {
+  await fetchSystemData();
+};
 
 // 搜索进程
 function searchProcesses() {
@@ -376,16 +400,15 @@ function searchProcesses() {
 }
 
 // 组件挂载时初始化
-onMounted(() => {
+onMounted(async () => {
   initCharts();
-  simulateSystemDataLoading();
+  await fetchSystemData();
   // 监听搜索输入
   searchProcess.value && searchProcesses();
   searchProcess.value = '';
-  // 移除定时更新
-  const interval = setInterval(() => {
-    simulateSystemDataLoading();
-    updateCharts();
+  // 设置定时刷新
+  const interval = setInterval(async () => {
+    await fetchSystemData();
   }, refreshRate.value * 1000);
 
   // 保存interval以便组件卸载时清除

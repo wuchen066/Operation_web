@@ -25,7 +25,7 @@
           <div>
             <h3 class="text-gray-500 dark:text-black text-sm font-medium">CPU 使用率</h3>
             <div class="flex items-end space-x-1">
-              <span class="text-2xl font-bold dark:text-black">{{ systemStore.cpuUsage }}%</span>
+              <span class="text-2xl font-bold dark:text-black">{{ cpuUsage }}%</span>
               <span class="text-gray-500 text-sm mb-1">%</span>
             </div>
           </div>
@@ -34,7 +34,7 @@
           </div>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2.5">
-          <div class="bg-primary h-2.5 rounded-full" :style="{ width: systemStore.cpuUsage + '%' }"></div>
+          <div class="bg-primary h-2.5 rounded-full" :style="{ width: cpuUsage + '%' }"></div>
         </div>
         <div class="flex justify-between mt-2">
           <span class="text-xs text-gray-500 dark:text-black">核心数: {{ cpuCores }}</span>
@@ -48,7 +48,7 @@
           <div>
             <h3 class="text-gray-500 dark:text-black text-sm font-medium">内存使用率</h3>
             <div class="flex items-end space-x-1">
-              <span class="text-2xl font-bold dark:text-black">{{ systemStore.memoryUsage }}%</span>
+              <span class="text-2xl font-bold dark:text-black">{{ memoryUsage }}%</span>
               <span class="text-gray-500 text-sm mb-1">%</span>
             </div>
           </div>
@@ -57,7 +57,7 @@
           </div>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2.5">
-          <div class="bg-secondary h-2.5 rounded-full" :style="{ width: systemStore.memoryUsage + '%' }"></div>
+          <div class="bg-secondary h-2.5 rounded-full" :style="{ width: memoryUsage + '%' }"></div>
         </div>
         <div class="flex justify-between mt-2">
           <span class="text-xs text-gray-500 dark:text-black">已用: {{ memUsed }} GB</span>
@@ -71,7 +71,7 @@
           <div>
             <h3 class="text-gray-500 dark:text-black text-sm font-medium">磁盘使用率</h3>
             <div class="flex items-end space-x-1">
-              <span class="text-2xl font-bold dark:text-black">{{ systemStore.diskUsage }}%</span>
+              <span class="text-2xl font-bold dark:text-black">{{ diskUsage }}%</span>
               <span class="text-gray-500 text-sm mb-1">%</span>
             </div>
           </div>
@@ -80,7 +80,7 @@
           </div>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2.5">
-          <div class="bg-warning h-2.5 rounded-full" :style="{ width: systemStore.diskUsage + '%' }"></div>
+          <div class="bg-warning h-2.5 rounded-full" :style="{ width: diskUsage + '%' }"></div>
         </div>
         <div class="flex justify-between mt-2">
           <span class="text-xs text-gray-500 dark:text-black">已用: {{ diskUsed }} GB</span>
@@ -94,7 +94,7 @@
           <div>
             <h3 class="text-gray-500 dark:text-black text-sm font-medium">网络流量</h3>
             <div class="flex items-end space-x-1">
-              <span class="text-2xl font-bold dark:text-black">{{ systemStore.networkUsage }}</span>
+              <span class="text-2xl font-bold dark:text-black">{{ networkUsage }}</span>
               <span class="text-gray-500 text-sm mb-1">KB/s</span>
             </div>
           </div>
@@ -103,11 +103,11 @@
           </div>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2.5">
-          <div class="bg-info h-2.5 rounded-full" :style="{ width: Math.min(systemStore.networkUsage / 1000 * 100, 100) + '%' }"></div>
+          <div class="bg-info h-2.5 rounded-full" :style="{ width: Math.min(networkUsage / 1000 * 100, 100) + '%' }"></div>
         </div>
         <div class="flex justify-between mt-2">
-          <span class="text-xs text-gray-500 dark:text-black">上传: {{ systemStore.networkUp }} KB/s</span>
-<span class="text-xs text-gray-500 dark:text-black">下载: {{ systemStore.networkDown }} KB/s</span>
+          <span class="text-xs text-gray-500 dark:text-black">上传: {{ networkUp }} KB/s</span>
+<span class="text-xs text-gray-500 dark:text-black">下载: {{ networkDown }} KB/s</span>
         </div>
       </div>
     </div>
@@ -190,18 +190,58 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { useSystemMetricsStore } from '@/store/systemMetrics';
+import axios from 'axios';
 import Chart from 'chart.js/auto';
 
 
 // 状态数据
-const systemStore = useSystemMetricsStore();
+const cpuUsage = ref('0');
+const memoryUsage = ref('0');
+const diskUsage = ref('0');
+const networkUsage = ref('0');
+const networkUp = ref('0');
+const networkDown = ref('0');
 const cpuCores = ref('12核');
-const cpuFrequency = ref('3.7');
 const memUsed = ref('0');
-const memTotal = ref('16');
+const memTotal = ref('0');
+
+const diskTotal = ref('0');
+
+// 获取系统监控数据
+const fetchSystemData = async () => {
+  try {
+    const response = await axios.get('/api/system-metrics');
+    const data = response.data;
+    cpuUsage.value = data.cpuUsage;
+    memoryUsage.value = data.memoryUsage;
+    diskUsage.value = data.diskUsage;
+    networkUsage.value = data.networkUsage;
+    networkUp.value = data.networkUp;
+    networkDown.value = data.networkDown;
+    memUsed.value = data.memUsed;
+    memTotal.value = data.memTotal;
+    diskUsed.value = data.diskUsed;
+    diskTotal.value = data.diskTotal;
+  } catch (error) {
+    console.error('获取系统数据失败:', error);
+  }
+};
+
+  // 刷新数据
+  const refreshData = async () => {
+    await fetchSystemData();
+  };
+
+  onMounted(async () => {
+    await fetchSystemData();
+    initCharts();
+    // 设置定时刷新
+    const interval = setInterval(fetchSystemData, 5000);
+    onUnmounted(() => clearInterval(interval));
+  });
+  const cpuFrequency = ref('3.7');
 const diskUsed = ref('0');
-const diskTotal = ref('500');
+
 
 
 // 图表实例
@@ -219,7 +259,7 @@ function initCharts() {
     type: 'line',
     data: {
       labels: labels,
-      datasets: [{ label: 'CPU 使用率 (%)', data: [systemStore.cpuUsage], borderColor: '#165DFF', backgroundColor: 'rgba(22, 93, 255, 0.1)', borderWidth: 2, tension: 0.3, fill: true }]
+      datasets: [{ label: 'CPU 使用率 (%)', data: [cpuUsage.value], borderColor: '#165DFF', backgroundColor: 'rgba(22, 93, 255, 0.1)', borderWidth: 2, tension: 0.3, fill: true }]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } } }
   });
@@ -229,7 +269,7 @@ function initCharts() {
     type: 'line',
     data: {
       labels: labels,
-      datasets: [{ label: '内存使用 (%)', data: [systemStore.memoryUsage], borderColor: '#00B42A', backgroundColor: 'rgba(0, 180, 42, 0.1)', borderWidth: 2, tension: 0.3, fill: true }]
+      datasets: [{ label: '内存使用 (%)', data: [memoryUsage.value], borderColor: '#00B42A', backgroundColor: 'rgba(0, 180, 42, 0.1)', borderWidth: 2, tension: 0.3, fill: true }]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } } }
   });
@@ -237,7 +277,7 @@ function initCharts() {
   // 磁盘使用图表
   diskChart = new Chart(document.getElementById('diskChart'), {
     type: 'doughnut',
-    data: { labels: ['已使用', '空闲'], datasets: [{ data: [systemStore.diskUsage, 100 - systemStore.diskUsage], backgroundColor: ['#FF7D00', '#F2F3F5'], borderWidth: 0 }] },
+    data: { labels: ['已使用', '空闲'], datasets: [{ data: [diskUsage.value, 100 - diskUsage.value], backgroundColor: ['#FF7D00', '#F2F3F5'], borderWidth: 0 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '70%' }
   });
 
@@ -260,15 +300,15 @@ function updateCharts() {
   if (!cpuChart || !memoryChart || !diskChart || !diskIOChart) return;
 
   // 更新CPU图表
-  cpuChart.data.datasets[0].data = [systemStore.cpuUsage];
+  cpuChart.data.datasets[0].data = [cpuUsage.value];
   cpuChart.update();
 
   // 更新内存图表
-  memoryChart.data.datasets[0].data = [systemStore.memoryUsage];
+  memoryChart.data.datasets[0].data = [memoryUsage.value];
   memoryChart.update();
 
   // 更新磁盘图表
-  diskChart.data.datasets[0].data = [systemStore.diskUsage, 100 - systemStore.diskUsage];
+  diskChart.data.datasets[0].data = [diskUsage.value, 100 - diskUsage.value];
   diskChart.update();
 
   // 磁盘IO图表可在后续添加真实数据更新逻辑
@@ -276,39 +316,9 @@ function updateCharts() {
 
 // 监听状态变化更新图表
 watch(
-  () => [systemStore.cpuUsage, systemStore.memoryUsage, systemStore.diskUsage],
+  () => [cpuUsage.value, memoryUsage.value, diskUsage.value],
   () => updateCharts()
 );
 
-// 组件挂载时初始化
-// 刷新数据
-function refreshData() {
-  // 实际项目中应替换为API调用
-  const newMetrics = {
-  cpu: Math.floor(Math.random() * 100),
-  memory: Math.floor(Math.random() * 100),
-  disk: Math.floor(Math.random() * 100),
-  networkUsage: Math.floor(Math.random() * 1000),
-  networkUp: (Math.random() * 100).toFixed(1),
-  networkDown: (Math.random() * 500).toFixed(1)
-};
-  systemStore.updateMetrics(newMetrics);
-}
 
-onMounted(() => {
-  initCharts();
-  refreshData();
-  // 定时更新数据
-  const interval = setInterval(refreshData, 5000);
-
-  // 保存interval以便组件卸载时清除
-  onUnmounted(() => {
-    clearInterval(interval);
-    // 销毁图表实例
-    cpuChart.destroy();
-    memoryChart.destroy();
-    diskChart.destroy();
-    diskIOChart.destroy();
-  });
-});
 </script>

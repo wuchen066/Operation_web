@@ -1,16 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
 import Dashboard from '../views/Dashboard.vue';
-import SystemMonitor from '../views/System.vue';
-import CommandExecution from '../views/Commands.vue';
+import System from '../views/System.vue';
+import Commands from '../views/Commands.vue';
 import Settings from '../views/Settings.vue';
 import axios from 'axios';
 
 const routes = [
   { path: '/login', name: 'Login', component: Login },
   { path: '/', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
-  { path: '/system', name: 'System', component: SystemMonitor, meta: { requiresAuth: true } },
-  { path: '/commands', name: 'Commands', component: CommandExecution, meta: { requiresAuth: true } },
+  { path: '/system', name: 'System', component: System, meta: { requiresAuth: true } },
+  { path: '/commands', name: 'Commands', component: Commands, meta: { requiresAuth: true } },
   { path: '/settings', name: 'Settings', component: Settings, meta: { requiresAuth: true } }
 ];
 

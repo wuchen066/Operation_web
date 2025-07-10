@@ -9,7 +9,7 @@
           </button>
           <i class="fa fa-server text-primary text-2xl"></i>
           <h1 class="text-xl font-bold text-primary hidden sm:block">{{ displayName }}</h1>
-          <h1 class="text-lg font-bold text-primary sm:hidden truncate max-w-[150px]">{{ displayName }}</h1>
+            <h1 class="text-lg font-bold text-primary sm:hidden truncate max-w-[150px]">{{ displayName }}</h1>
         </div>
         <div class="flex items-center space-x-4">
           <div class="relative">
@@ -203,21 +203,27 @@ onMounted(async () => {
     // 检查localStorage缓存
     const cachedSettings = localStorage.getItem('settings');
     if (cachedSettings) {
-      const { data, timestamp } = JSON.parse(cachedSettings);
-      const now = Date.now();
-      // 缓存有效期10分钟
-      if (now - timestamp < 10 * 60 * 1000) {
-        displayName.value = data.display_name || '服务器运维监控';
+        const { data, timestamp } = JSON.parse(cachedSettings);
+        const now = Date.now();
+        // 缓存有效期10分钟
+        if (now - timestamp < 10 * 60 * 1000) {
+          displayName.value = data.display_name || '服务器运维监控';
+        } else {
+          // 缓存过期，重新请求
+          const response = await axios.get('/api/settings');
+          displayName.value = response.data.display_name || '服务器运维监控';
+          // 更新缓存
+          localStorage.setItem('settings', JSON.stringify({
+            data: response.data,
+            timestamp: Date.now()
+          }));
+        }
       } else {
-        // 缓存过期，重新请求
-        throw new Error('Cache expired');
-      }
-    } else {
-      // 无缓存，请求API
-      const response = await axios.get('/api/settings');
-      displayName.value = response.data.display_name || '服务器运维监控';
-      // 存入缓存，带时间戳
-      localStorage.setItem('settings', JSON.stringify({
+        // 无缓存，请求API
+        const response = await axios.get('/api/settings');
+        displayName.value = response.data.display_name || '服务器运维监控';
+        // 存入缓存，带时间戳
+        localStorage.setItem('settings', JSON.stringify({
         data: response.data,
         timestamp: Date.now()
       }));
