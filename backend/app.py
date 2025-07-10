@@ -39,7 +39,7 @@ def init_default_user():
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
         # 生成复杂随机用户名和密码
-        username = random.choices(string.ascii_letters + string.digits, k=8)
+        username = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
         # username = 'admin_' + ''.join(random.choices(string.ascii_letters + string.digits, k=8))
         password = ''.join(random.choices(
             string.ascii_uppercase + string.ascii_lowercase + 

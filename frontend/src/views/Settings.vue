@@ -10,7 +10,7 @@ const activeTab = ref('basic');
 const settings = ref({
   display_name: '',
   refresh_rate: 0,
-  serverIp: '',
+  serverIp: '127.0.0.1',
   serverPort: 0,
   timeout: 0,
   logDirectory: '/var/log/operation_log',
@@ -42,6 +42,8 @@ onMounted(async () => {
       showNetworkUsage: data.showNetworkUsage || false,
       showProcessList: data.showProcessList || false, 
     };
+    // 自动保存display_name到localStorage
+    localStorage.setItem('display_name', settings.value.display_name);
   } catch (error) {
     ElMessage.error('获取设置数据失败，请刷新页面重试');
     console.error('Failed to fetch settings:', error);
@@ -55,12 +57,16 @@ const saveSettings = async () => {
     ElMessage.success(response.data.message);
     // 更新localStorage缓存
     localStorage.setItem('settings', JSON.stringify({
-      data: response.data,
+      data: settings.value,
       timestamp: Date.now()
     }));
+    // 保存display_name到localStorage
+    localStorage.setItem('display_name', settings.value.display_name);
+    // 触发displayName更新事件
+    window.dispatchEvent(new Event('displayNameUpdated'));
     // 更新displayName状态
     // 保存成功后1秒刷新页面
-    setTimeout(() => window.location.reload(), 1000);
+    // setTimeout(() => window.location.reload(), 1000);
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '保存设置失败');
   }
@@ -174,8 +180,8 @@ const saveSettings = async () => {
       <ElTabPane label="关于" label-class="dark:text-black" name="about">
         <div class="settings-card p-4 bg-white rounded-lg shadow-sm">
           <div class="text-center">
-            <div class="text-2xl  dark:text-black font-bold mb-2">{{ settings.displayName }}</div>
-            <div class="text-gray-500 dark:text-black mb-4">版本 v1.0.0</div>
+            <div class="text-2xl  dark:text-black font-bold mb-2">服务器运维面板</div>
+            <div class="text-gray-500 dark:text-black mb-4">版本 {{ version }}</div>
             <div class="text-gray-600 dark:text-black ">服务器运维监控工具</div>
           </div>
         </div>

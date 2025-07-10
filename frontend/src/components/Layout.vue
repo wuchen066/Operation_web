@@ -79,7 +79,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch, computed, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
@@ -198,6 +198,30 @@ onMounted(async () => {
     isSidebarOpen.value = false;
   }
 
+  // 从localStorage同步displayName
+  const cachedSettings = localStorage.getItem('settings');
+  if (cachedSettings) {
+    const { data } = JSON.parse(cachedSettings);
+    if (data.display_name && data.display_name !== displayName.value) {
+      displayName.value = data.display_name;
+    }
+  }
+
+  // 添加displayName更新事件监听
+  const handleDisplayNameUpdate = () => {
+    const cachedSettings = localStorage.getItem('settings');
+    if (cachedSettings) {
+      const { data } = JSON.parse(cachedSettings);
+      displayName.value = data.display_name || '服务器运维监控';
+    }
+  };
+  window.addEventListener('displayNameUpdated', handleDisplayNameUpdate);
+
+  // 在组件卸载时移除事件监听
+  onUnmounted(() => {
+    window.removeEventListener('displayNameUpdated', handleDisplayNameUpdate);
+  });
+});
   // 获取displayName和设置，添加缓存逻辑
   try {
     // 检查localStorage缓存
@@ -248,7 +272,7 @@ onMounted(async () => {
   simulateSystemDataLoading();
   // 定时更新数据
   setInterval(simulateSystemDataLoading, 5000);
-});
+// });
 
 
 </script>
