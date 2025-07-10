@@ -180,6 +180,15 @@ const logout = async () => {
   }
 }
 
+// 定义事件处理函数
+const handleDisplayNameUpdate = () => {
+  const cachedSettings = localStorage.getItem('settings');
+  if (cachedSettings) {
+    const { data } = JSON.parse(cachedSettings);
+    displayName.value = data.display_name || '运维监控面板';
+  }
+};
+
 onMounted(async () => {
   await checkLoginStatus();
   // 初始化主题
@@ -208,19 +217,12 @@ onMounted(async () => {
   }
 
   // 添加displayName更新事件监听
-  const handleDisplayNameUpdate = () => {
-    const cachedSettings = localStorage.getItem('settings');
-    if (cachedSettings) {
-      const { data } = JSON.parse(cachedSettings);
-      displayName.value = data.display_name || '服务器运维监控';
-    }
-  };
   window.addEventListener('displayNameUpdated', handleDisplayNameUpdate);
+});
 
-  // 在组件卸载时移除事件监听
-  onUnmounted(() => {
-    window.removeEventListener('displayNameUpdated', handleDisplayNameUpdate);
-  });
+// 在组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('displayNameUpdated', handleDisplayNameUpdate);
 });
   // 获取displayName和设置，添加缓存逻辑
   try {

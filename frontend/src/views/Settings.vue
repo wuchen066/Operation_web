@@ -1,10 +1,16 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, reactive, watch } from 'vue';
+import { version } from '../../package.json';
 import axios from 'axios';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElForm, ElFormItem, ElInput, ElButton, ElSwitch, ElTabs, ElTabPane, ElSlider } from 'element-plus';
 
 // 初始化标签页状态和设置数据对象
 const activeTab = ref('basic');
+
+// 监听标签页变化并保存到localStorage
+watch(activeTab, (newVal) => {
+  localStorage.setItem('settingsActiveTab', newVal);
+});
 
 // 初始化设置数据对象，与API返回结构对应
 const settings = ref({
@@ -22,6 +28,11 @@ const settings = ref({
 // 加载时获取设置数据并填充表单
 onMounted(async () => {
   try {
+    // 恢复保存的标签页状态
+    const savedTab = localStorage.getItem('settingsActiveTab');
+    if (savedTab) {
+      activeTab.value = savedTab;
+    }
     const response = await axios.get('/api/settings');
     const data = response.data;
     
@@ -29,18 +40,18 @@ onMounted(async () => {
     settings.value = {
       display_name: data.display_name || '',
       refresh_rate: data.refresh_rate || 0,
-      serverIp: data.serverIp || '',
+      serverIp: data.serverIp || '127.0.0.1',
       serverPort: data.serverPort || 8080,
       timeout: data.timeout || 10,
       logDirectory: data.logDirectory || '',
       enableCompression: data.enableCompression || false,
       enableCache: data.enableCache || false,
       autoReconnect: data.autoReconnect || false,
-      showCpuUsage: data.showCpuUsage || false,
-      showMemoryUsage: data.showMemoryUsage || false,
-      showDiskUsage: data.showDiskUsage || false,
-      showNetworkUsage: data.showNetworkUsage || false,
-      showProcessList: data.showProcessList || false, 
+      showCpuUsage: data.showCpuUsage || true,
+      showMemoryUsage: data.showMemoryUsage || true,
+      showDiskUsage: data.showDiskUsage || true,
+      showNetworkUsage: data.showNetworkUsage || true,
+      showProcessList: data.showProcessList || true, 
     };
     // 自动保存display_name到localStorage
     localStorage.setItem('display_name', settings.value.display_name);
@@ -66,7 +77,7 @@ const saveSettings = async () => {
     window.dispatchEvent(new Event('displayNameUpdated'));
     // 更新displayName状态
     // 保存成功后1秒刷新页面
-    // setTimeout(() => window.location.reload(), 1000);
+     setTimeout(() => window.location.reload(), 1500);
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '保存设置失败');
   }
